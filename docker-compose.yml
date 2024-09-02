@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  token-refresh:
+    image: luciferscircle/webos-token-refresh
+    container_name: WebOS-TR
+    environment:
+      - SESSION_TOKEN=Your_Token_Here
+      - SCRIPT_INTERVAL=86400
+    restart: always

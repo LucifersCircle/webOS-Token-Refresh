@@ -129,4 +129,4 @@ Alternatively, you can run the Docker container from the DockerHub Image using t
 
 ## Questions
 
-If you have any questions or need further assistance, feel free to open an issue.
+If you have any questions or need further assistance, feel free to open an issue.  I made this because a certain website stopped letting me make 1 request per day for free to renew my dev mode session, and I wanted to make it easy on myself to "set and forget" it for real this time.

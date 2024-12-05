@@ -102,13 +102,18 @@ def add_key():
     if not key:
         return jsonify({'error': 'Key is required'}), 400
     try:
+        print(f"Received key: {key}")
         encrypted_key = cipher.encrypt(key.encode())
+        print(f"Encrypted key: {encrypted_key}")
         conn = sqlite3.connect(DB_FILE)
+        print("Database connection established.")
         conn.execute('INSERT INTO keys (encrypted_key) VALUES (?)', (encrypted_key,))
         conn.commit()
         conn.close()
+        print("Key inserted successfully.")
         return jsonify({'message': 'Key added successfully'}), 201
     except Exception as e:
+        print(f"Error adding key: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

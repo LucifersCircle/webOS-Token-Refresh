@@ -3,9 +3,10 @@ FROM python:3.10-slim
 WORKDIR /usr/src/app
 
 RUN adduser --disabled-password --gecos '' appuser
-USER appuser
 
-RUN chown -R appuser /usr/src/appuser
+RUN chown -R appuser /usr/src/app
+
+USER appuser
 
 COPY . .
 

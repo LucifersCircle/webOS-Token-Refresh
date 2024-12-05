@@ -4,12 +4,12 @@ WORKDIR /usr/src/app
 
 RUN adduser --disabled-password --gecos '' appuser
 
-RUN chown -R appuser /usr/src/app
+COPY . .
+RUN pip install --no-cache-dir flask requests cryptography
+
+
+RUN chown -R appuser:appuser /usr/src/app
 
 USER appuser
 
-COPY . .
-
-RUN pip install --no-cache-dir flask requests cryptography
-
-CMD ["flask", "run", "--host=0.0.0.0"]
+CMD ["python", "-m", "flask", "run", "--host=0.0.0.0"]

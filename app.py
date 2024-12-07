@@ -9,12 +9,6 @@ from cryptography.fernet import Fernet
 
 app = Flask(__name__)
 
-# Set up logging for Gunicorn
-if __name__ != '__main__':
-    gunicorn_logger = logging.getLogger('gunicorn.error')
-    app.logger.handlers = gunicorn_logger.handlers
-    app.logger.setLevel(gunicorn_logger.level)
-
 # Get encryption key from environment variable
 encryption_key = os.getenv('ENCRYPTION_KEY')
 if not encryption_key:
@@ -27,18 +21,14 @@ DB_FILE = '/usr/src/app/db/keys.db'
 
 # Function to initialize the database if it doesn't exist
 def initialize_db():
-    print(f"Initializing database at: {DB_FILE}")
-    app.logger.info(f"Initializing database at: {DB_FILE}")
+    print(f"Initializing database at: {DB_FILE}", flush=True)
     if os.path.exists(DB_FILE) and not os.path.isfile(DB_FILE):
-        print(f"Error: {DB_FILE} exists but is not a file and cannot be removed automatically.")
-        app.logger.info(f"Error: {DB_FILE} exists but is not a file and cannot be removed automatically.")
-        print("Please remove it manually and restart the application.")
-        app.logger.info("Please remove it manually and restart the application.")
+        print(f"Error: {DB_FILE} exists but is not a file and cannot be removed automatically.", flush=True)
+        print("Please remove it manually and restart the application.", flush=True)
         return
 
     if not os.path.exists(DB_FILE):
-        print(f"Database file does not exist. Creating a new one at: {DB_FILE}")
-        app.logger.info(f"Database file does not exist. Creating a new one at: {DB_FILE}")
+        print(f"Database file does not exist. Creating a new one at: {DB_FILE}", flush=True)
     try:
         conn = sqlite3.connect(DB_FILE)
         conn.execute('''
@@ -50,11 +40,9 @@ def initialize_db():
         ''')
         conn.commit()
         conn.close()
-        print("Database initialized successfully.")
-        app.logger.info("Database initialized successfully.")
+        print("Database initialized successfully.", flush=True)
     except Exception as e:
-        print(f"Error initializing database: {e}")
-        app.logger.info(f"Error initializing database: {e}")
+        print(f"Error initializing database: {e}", flush=True)
 
 # HTML template for the landing page
 HTML_TEMPLATE = """
@@ -222,8 +210,7 @@ def manage_key():
                 return render_template_string(HTML_TEMPLATE, message=message)
 
         except Exception as e:
-            print(f"Error managing key: {e}")
-            app.logger.info(f"Error managing key: {e}")
+            print(f"Error managing key: {e}", flush=True)
             if is_api_request:
                 return jsonify({'error': str(e)}), 500
             message = f"An error occurred: {e}"

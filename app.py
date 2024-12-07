@@ -2,6 +2,7 @@ import os
 import re
 import sqlite3
 import hashlib
+
 from flask import Flask, request, jsonify, render_template_string
 from cryptography.fernet import Fernet
 
@@ -52,7 +53,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Key</title>
+    <title>Key Management</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -89,19 +90,56 @@ HTML_TEMPLATE = """
         button:hover {
             background-color: #3f4c8c;
         }
+        form {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Add a Key</h1>
+        <h1>Key Management</h1>
         <form action="/add_key" method="post">
-            <input type="text" name="key" placeholder="Enter your key" required>
-            <button type="submit">Submit</button>
+            <input type="text" name="key" placeholder="Enter your key to add" required>
+            <button type="submit">Add Key</button>
+        </form>
+        <form action="/remove_key" method="post">
+            <input type="text" name="key" placeholder="Enter your key to remove" required>
+            <button type="submit">Remove Key</button>
         </form>
     </div>
 </body>
 </html>
 """
+
+# New route to handle key removal
+@app.route('/remove_key', methods=['POST'])
+def remove_key():
+    key = request.form.get('key')
+    if not key:
+        return jsonify({'error': 'Key is required'}), 400
+
+    # Validate the key using a regular expression
+    if not re.fullmatch(r'^[a-fA-F0-9]{64}$', key):
+        return jsonify({'error': 'Invalid key format. Only 64-character alphanumeric keys are allowed.'}), 400
+
+    try:
+        key_hash = hashlib.sha256(key.encode()).hexdigest()
+        conn = sqlite3.connect(DB_FILE)
+        
+        # Check if the key exists
+        cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
+        if cursor.fetchone()[0] == 0:
+            conn.close()
+            return jsonify({'error': 'Key not found'}), 404
+
+        # Remove the key from the database
+        conn.execute("DELETE FROM keys WHERE key_hash = ?", (key_hash,))
+        conn.commit()
+        conn.close()
+        return jsonify({'message': 'Key removed successfully'}), 200
+    except Exception as e:
+        print(f"Error removing key: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # Landing page route
 @app.route('/')

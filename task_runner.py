@@ -1,6 +1,7 @@
 import os
 import time
 import sqlite3
+
 import requests
 from cryptography.fernet import Fernet
 
@@ -18,31 +19,6 @@ cipher = Fernet(encryption_key.encode())
 def mask_token(token):
     """Masks the token, showing only the last 4 characters."""
     return f"***{token[-4:]}"
-
-def remove_duplicates():
-    """Remove duplicate keys from the database."""
-    try:
-        conn = sqlite3.connect(db_file)
-        cursor = conn.cursor()
-
-        # Remove duplicates based on key_hash
-        cursor.execute("""
-        DELETE FROM keys
-        WHERE rowid NOT IN (
-            SELECT MIN(rowid)
-            FROM keys
-            GROUP BY key_hash
-        )
-        """)
-
-        removed_count = conn.total_changes  # Number of rows deleted
-        conn.commit()
-        conn.close()
-        print(f"Removed {removed_count} duplicate keys from the database.", flush=True)
-    except Exception as e:
-        print(f"Error removing duplicates: {e}", flush=True)
-
-
 
 def fetch_keys():
     """Fetch and decrypt all keys from the database."""
@@ -71,16 +47,10 @@ def send_request(token):
 if __name__ == "__main__":
     print("Starting task_runner...", flush=True)
     while True:
-        # Remove duplicates before processing
-        remove_duplicates()
-        
-        # Fetch keys and process them
         keys = fetch_keys()
         if not keys:
             print("No keys found in the database.", flush=True)
         for key in keys:
             send_request(key)
-        
-        # Wait before the next iteration
         print(f"Sleeping for {interval} seconds.", flush=True)
         time.sleep(interval)

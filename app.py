@@ -91,6 +91,13 @@ HTML_TEMPLATE = """
         button:hover {
             background-color: #3f4c8c;
         }
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #2e2e2e;
+            border-radius: 5px;
+            color: lightgreen;
+        }
     </style>
 </head>
 <body>
@@ -101,6 +108,9 @@ HTML_TEMPLATE = """
             <button type="submit" name="action" value="add">Add Key</button>
             <button type="submit" name="action" value="remove">Remove Key</button>
         </form>
+        {% if message %}
+        <div class="message">{{ message }}</div>
+        {% endif %}
     </div>
 </body>
 </html>
@@ -111,54 +121,63 @@ HTML_TEMPLATE = """
 # Landing page route
 @app.route('/', methods=['GET', 'POST'])
 def manage_key():
-    if request.method == 'GET':
-        return render_template_string(HTML_TEMPLATE)
+    message = None  # Default message
+    if request.method == 'POST':
+        key = request.form.get('key')
+        action = request.form.get('action')
 
-    key = request.form.get('key')
-    action = request.form.get('action')
+        if not key:
+            message = "Key is required."
+            return render_template_string(HTML_TEMPLATE, message=message)
 
-    if not key:
-        return jsonify({'error': 'Key is required'}), 400
+        # Validate the key using a regular expression
+        if not re.fullmatch(r'^[a-fA-F0-9]{64}$', key):
+            message = "Invalid key format. Only 64-character alphanumeric keys are allowed."
+            return render_template_string(HTML_TEMPLATE, message=message)
 
-    # Validate the key using a regular expression
-    if not re.fullmatch(r'^[a-fA-F0-9]{64}$', key):
-        return jsonify({'error': 'Invalid key format. Only 64-character alphanumeric keys are allowed.'}), 400
+        try:
+            key_hash = hashlib.sha256(key.encode()).hexdigest()
+            conn = sqlite3.connect(DB_FILE)
 
-    try:
-        key_hash = hashlib.sha256(key.encode()).hexdigest()
-        conn = sqlite3.connect(DB_FILE)
+            if action == 'add':
+                # Check for duplicate hash
+                cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
+                if cursor.fetchone()[0] > 0:
+                    conn.close()
+                    message = "Duplicate key detected."
+                    return render_template_string(HTML_TEMPLATE, message=message)
 
-        if action == 'add':
-            # Check for duplicate hash
-            cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
-            if cursor.fetchone()[0] > 0:
+                encrypted_key = cipher.encrypt(key.encode())
+                conn.execute('INSERT INTO keys (encrypted_key, key_hash) VALUES (?, ?)', (encrypted_key, key_hash))
+                conn.commit()
                 conn.close()
-                return jsonify({'error': 'Duplicate key detected'}), 409
+                message = "Key added successfully."
+                return render_template_string(HTML_TEMPLATE, message=message)
 
-            encrypted_key = cipher.encrypt(key.encode())
-            conn.execute('INSERT INTO keys (encrypted_key, key_hash) VALUES (?, ?)', (encrypted_key, key_hash))
-            conn.commit()
-            conn.close()
-            return jsonify({'message': 'Key added successfully'}), 201
+            elif action == 'remove':
+                # Check if the key exists
+                cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
+                if cursor.fetchone()[0] == 0:
+                    conn.close()
+                    message = "Key not found."
+                    return render_template_string(HTML_TEMPLATE, message=message)
 
-        elif action == 'remove':
-            # Check if the key exists
-            cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
-            if cursor.fetchone()[0] == 0:
+                conn.execute("DELETE FROM keys WHERE key_hash = ?", (key_hash,))
+                conn.commit()
                 conn.close()
-                return jsonify({'error': 'Key not found'}), 404
+                message = "Key removed successfully."
+                return render_template_string(HTML_TEMPLATE, message=message)
 
-            conn.execute("DELETE FROM keys WHERE key_hash = ?", (key_hash,))
-            conn.commit()
-            conn.close()
-            return jsonify({'message': 'Key removed successfully'}), 200
+            else:
+                message = "Invalid action."
+                return render_template_string(HTML_TEMPLATE, message=message)
 
-        else:
-            return jsonify({'error': 'Invalid action'}), 400
+        except Exception as e:
+            print(f"Error managing key: {e}")
+            message = f"An error occurred: {e}"
+            return render_template_string(HTML_TEMPLATE, message=message)
 
-    except Exception as e:
-        print(f"Error managing key: {e}")
-        return jsonify({'error': str(e)}), 500
+    return render_template_string(HTML_TEMPLATE, message=message)
 
 
 

@@ -14,7 +14,7 @@ if not encryption_key:
 cipher = Fernet(encryption_key.encode())
 
 # Database file path
-DB_FILE = '/usr/src/app/keys.db'
+DB_FILE = '/usr/src/app/db/keys.db'
 
 # Function to initialize the database if it doesn't exist
 def initialize_db():

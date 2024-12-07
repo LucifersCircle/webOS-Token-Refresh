@@ -8,10 +8,12 @@ COPY . .
 
 RUN chown -R appuser:appuser /usr/src/app
 
-RUN pip install --no-cache-dir flask requests cryptography
+RUN pip install --no-cache-dir flask requests cryptography gunicorn
 
 USER appuser
 
-# Use an environment variable to decide which script to run
-ENV APP_SCRIPT="app.py"
-CMD ["sh", "-c", "python $APP_SCRIPT"]
+# Environment variable to specify the script for the app
+ENV APP_SCRIPT="app:app"  # app is the filename, app is the Flask instance
+
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "$APP_SCRIPT"]
+

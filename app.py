@@ -72,7 +72,7 @@ HTML_TEMPLATE = """
         }
         input {
             padding: 10px;
-            margin: 10px 10px 20px 0;
+            margin: 10px 2px 10px 0;
             width: 300px;
             border-radius: 5px;
             border: 1px solid #444;
@@ -86,17 +86,33 @@ HTML_TEMPLATE = """
             background-color: #5c6bc0;
             color: white;
             cursor: pointer;
-            margin: 0 10px;
+            margin: 2px;
         }
         button:hover {
             background-color: #3f4c8c;
         }
         .message {
-            margin-top: 20px;
+            margin-top: 10px;
             padding: 10px;
             background-color: #2e2e2e;
             border-radius: 5px;
             color: lightgreen;
+        }
+        .message.duplicate {
+            color: yellow;
+        }
+        .footer {
+            position: absolute;
+            bottom: 10px;
+            font-size: 14px;
+            color: #777;
+        }
+        .footer a {
+            color: #5c6bc0;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -109,11 +125,15 @@ HTML_TEMPLATE = """
             <button type="submit" name="action" value="remove">Remove Key</button>
         </form>
         {% if message %}
-        <div class="message">{{ message }}</div>
+        <div class="message {% if 'Duplicate' in message %}duplicate{% endif %}">{{ message }}</div>
         {% endif %}
+    </div>
+    <div class="footer">
+        <p>Check out the source code on <a href="https://github.com/LucifersCircle/webOS-Token-Refresh" target="_blank">GitHub</a>.</p>
     </div>
 </body>
 </html>
+
 """
 
 
@@ -144,14 +164,14 @@ def manage_key():
                 cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
                 if cursor.fetchone()[0] > 0:
                     conn.close()
-                    message = "Duplicate key detected."
+                    message = "Duplicate key hash detected. Refusing encryption and storage."
                     return render_template_string(HTML_TEMPLATE, message=message)
 
                 encrypted_key = cipher.encrypt(key.encode())
                 conn.execute('INSERT INTO keys (encrypted_key, key_hash) VALUES (?, ?)', (encrypted_key, key_hash))
                 conn.commit()
                 conn.close()
-                message = "Key added successfully."
+                message = "Key encrypted and added successfully."
                 return render_template_string(HTML_TEMPLATE, message=message)
 
             elif action == 'remove':
@@ -159,7 +179,7 @@ def manage_key():
                 cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
                 if cursor.fetchone()[0] == 0:
                     conn.close()
-                    message = "Key not found."
+                    message = "Key hash not found in database."
                     return render_template_string(HTML_TEMPLATE, message=message)
 
                 conn.execute("DELETE FROM keys WHERE key_hash = ?", (key_hash,))

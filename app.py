@@ -141,78 +141,52 @@ HTML_TEMPLATE = """
 # Landing page route
 @app.route('/', methods=['GET', 'POST'])
 def manage_key():
-    message = None  # Default message
+    message = None
 
     if request.method == 'POST':
         key = request.form.get('key')
         action = request.form.get('action')
 
         if not key:
-            message = "Key is required."
-            if request.headers.get('Content-Type') == 'application/json':
-                return jsonify({'error': message}), 400
-            return render_template_string(HTML_TEMPLATE, message=message)
+            return jsonify({'error': 'Key is required'}), 400
 
-        # Validate the key using a regular expression
+        # Validate the key format
         if not re.fullmatch(r'^[a-fA-F0-9]{64}$', key):
-            message = "Invalid key format. Only 64-character alphanumeric keys are allowed."
-            if request.headers.get('Content-Type') == 'application/json':
-                return jsonify({'error': message}), 400
-            return render_template_string(HTML_TEMPLATE, message=message)
+            return jsonify({'error': 'Invalid key format. Only 64-character alphanumeric keys are allowed.'}), 400
 
         try:
             key_hash = hashlib.sha256(key.encode()).hexdigest()
             conn = sqlite3.connect(DB_FILE)
 
             if action == 'add':
-                # Check for duplicate hash
                 cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
                 if cursor.fetchone()[0] > 0:
                     conn.close()
-                    message = "Duplicate key hash detected. Refusing encryption and storage."
-                    if request.headers.get('Content-Type') == 'application/json':
-                        return jsonify({'error': message}), 409
-                    return render_template_string(HTML_TEMPLATE, message=message)
+                    return jsonify({'error': 'Duplicate key hash detected.'}), 409
 
                 encrypted_key = cipher.encrypt(key.encode())
                 conn.execute('INSERT INTO keys (encrypted_key, key_hash) VALUES (?, ?)', (encrypted_key, key_hash))
                 conn.commit()
                 conn.close()
-                message = "Key encrypted and added successfully."
-                if request.headers.get('Content-Type') == 'application/json':
-                    return jsonify({'message': message}), 201
-                return render_template_string(HTML_TEMPLATE, message=message)
+                return jsonify({'message': 'Key added successfully.'}), 201
 
             elif action == 'remove':
-                # Check if the key exists
                 cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
                 if cursor.fetchone()[0] == 0:
                     conn.close()
-                    message = "Key hash not found in database."
-                    if request.headers.get('Content-Type') == 'application/json':
-                        return jsonify({'error': message}), 404
-                    return render_template_string(HTML_TEMPLATE, message=message)
+                    return jsonify({'error': 'Key hash not found in database.'}), 404
 
                 conn.execute("DELETE FROM keys WHERE key_hash = ?", (key_hash,))
                 conn.commit()
                 conn.close()
-                message = "Key removed successfully."
-                if request.headers.get('Content-Type') == 'application/json':
-                    return jsonify({'message': message}), 200
-                return render_template_string(HTML_TEMPLATE, message=message)
+                return jsonify({'message': 'Key removed successfully.'}), 200
 
             else:
-                message = "Invalid action."
-                if request.headers.get('Content-Type') == 'application/json':
-                    return jsonify({'error': message}), 400
-                return render_template_string(HTML_TEMPLATE, message=message)
+                return jsonify({'error': 'Invalid action.'}), 400
 
         except Exception as e:
             print(f"Error managing key: {e}")
-            message = f"An error occurred: {e}"
-            if request.headers.get('Content-Type') == 'application/json':
-                return jsonify({'error': message}), 500
-            return render_template_string(HTML_TEMPLATE, message=message)
+            return jsonify({'error': str(e)}), 500
 
     return render_template_string(HTML_TEMPLATE, message=message)
 

@@ -17,25 +17,27 @@ DB_FILE = 'keys.db'
 
 # Function to initialize the database if it doesn't exist
 def initialize_db():
+    print(f"Initializing database at: {DB_FILE}")
     if os.path.exists(DB_FILE) and not os.path.isfile(DB_FILE):
         print(f"Error: {DB_FILE} exists but is not a file and cannot be removed automatically.")
         print("Please remove it manually and restart the application.")
         return  # Exit initialization to prevent further errors
 
     if not os.path.exists(DB_FILE):
-        try:
-            conn = sqlite3.connect(DB_FILE)
-            conn.execute('''
-            CREATE TABLE IF NOT EXISTS keys (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                encrypted_key BLOB NOT NULL
-            )
-            ''')
-            conn.commit()
-            conn.close()
-            print("Database initialized")
-        except Exception as e:
-            print(f"Error initializing database: {e}")
+        print(f"Database file does not exist. Creating a new one at: {DB_FILE}")
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        conn.execute('''
+        CREATE TABLE IF NOT EXISTS keys (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            encrypted_key BLOB NOT NULL
+        )
+        ''')
+        conn.commit()
+        conn.close()
+        print("Database initialized successfully.")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
 
 # Initialize database on startup
 initialize_db()

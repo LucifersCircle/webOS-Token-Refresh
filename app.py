@@ -18,8 +18,9 @@ DB_FILE = 'keys.db'
 # Function to initialize the database if it doesn't exist
 def initialize_db():
     if os.path.exists(DB_FILE) and not os.path.isfile(DB_FILE):
-        print(f"Error: {DB_FILE} exists but is not a file. Removing it.")
-        os.rmdir(DB_FILE)  # Remove the directory
+        print(f"Error: {DB_FILE} exists but is not a file and cannot be removed automatically.")
+        print("Please remove it manually and restart the application.")
+        return  # Exit initialization to prevent further errors
 
     if not os.path.exists(DB_FILE):
         try:

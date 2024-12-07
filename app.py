@@ -20,14 +20,14 @@ DB_FILE = '/usr/src/app/db/keys.db'
 
 # Function to initialize the database if it doesn't exist
 def initialize_db():
-    print(f"Initializing database at: {DB_FILE}")
+    print(f"Initializing database at: {DB_FILE}", flush=True)
     if os.path.exists(DB_FILE) and not os.path.isfile(DB_FILE):
-        print(f"Error: {DB_FILE} exists but is not a file and cannot be removed automatically.")
-        print("Please remove it manually and restart the application.")
+        print(f"Error: {DB_FILE} exists but is not a file and cannot be removed automatically.", flush=True)
+        print("Please remove it manually and restart the application.", flush=True)
         return
 
     if not os.path.exists(DB_FILE):
-        print(f"Database file does not exist. Creating a new one at: {DB_FILE}")
+        print(f"Database file does not exist. Creating a new one at: {DB_FILE}", flush=True)
     try:
         conn = sqlite3.connect(DB_FILE)
         conn.execute('''
@@ -39,9 +39,9 @@ def initialize_db():
         ''')
         conn.commit()
         conn.close()
-        print("Database initialized successfully.")
+        print("Database initialized successfully.", flush=True)
     except Exception as e:
-        print(f"Error initializing database: {e}")
+        print(f"Error initializing database: {e}", flush=True)
 
 # Initialize database on startup
 initialize_db()
@@ -214,7 +214,7 @@ def manage_key():
                 return render_template_string(HTML_TEMPLATE, message=message)
 
         except Exception as e:
-            print(f"Error managing key: {e}")
+            print(f"Error managing key: {e}", flush=True)
             if is_api_request:
                 return jsonify({'error': str(e)}), 500
             message = f"An error occurred: {e}"
@@ -226,4 +226,4 @@ def manage_key():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)

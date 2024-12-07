@@ -2,7 +2,6 @@ import os
 import re
 import sqlite3
 import hashlib
-import logging
 
 from flask import Flask, request, jsonify, render_template_string
 from cryptography.fernet import Fernet
@@ -51,7 +50,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Key Management</title>
+    <title>WTR</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -119,7 +118,7 @@ HTML_TEMPLATE = """
 </head>
 <body>
     <div class="container">
-        <h1>Key Management</h1>
+        <h1>WebOS Token Refresher</h1>
         <form action="/" method="post">
             <input type="text" name="key" placeholder="Enter your key" required>
             <button type="submit" name="action" value="add">Add Key</button>
@@ -132,6 +131,9 @@ HTML_TEMPLATE = """
         ">{{ message }}</div>
         {% endif %}
 
+        <p class="description">
+            This page allows you to securely add or remove your developer mode session token for LG WebOS. Tokens are hashed, encrypted, stored, and periodically refreshed with the LG Developer API to keep your session active.
+        </p>
     </div>
     <div class="footer">
         <p>Check out the source code on <a href="https://github.com/LucifersCircle/webOS-Token-Refresh" target="_blank">GitHub</a>.</p>

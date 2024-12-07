@@ -5,11 +5,12 @@ WORKDIR /usr/src/app
 RUN adduser --disabled-password --gecos '' appuser
 
 COPY . .
-RUN pip install --no-cache-dir flask requests cryptography
-
 
 RUN chown -R appuser:appuser /usr/src/app
 
+RUN pip install --no-cache-dir flask requests cryptography
+
 USER appuser
 
-CMD ["python", "-m", "flask", "run", "--host=0.0.0.0"]
+# Default command (can be overridden in docker-compose.yml)
+CMD ["python", "app.py"]

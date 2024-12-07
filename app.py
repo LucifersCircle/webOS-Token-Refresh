@@ -142,17 +142,24 @@ HTML_TEMPLATE = """
 @app.route('/', methods=['GET', 'POST'])
 def manage_key():
     message = None
+    is_api_request = request.headers.get('Accept') == 'application/json'
 
     if request.method == 'POST':
         key = request.form.get('key')
         action = request.form.get('action')
 
         if not key:
-            return jsonify({'error': 'Key is required'}), 400
+            if is_api_request:
+                return jsonify({'error': 'Key is required'}), 400
+            message = "Key is required."
+            return render_template_string(HTML_TEMPLATE, message=message)
 
         # Validate the key format
         if not re.fullmatch(r'^[a-fA-F0-9]{64}$', key):
-            return jsonify({'error': 'Invalid key format. Only 64-character alphanumeric keys are allowed.'}), 400
+            if is_api_request:
+                return jsonify({'error': 'Invalid key format. Only 64-character alphanumeric keys are allowed.'}), 400
+            message = "Invalid key format. Only 64-character alphanumeric keys are allowed."
+            return render_template_string(HTML_TEMPLATE, message=message)
 
         try:
             key_hash = hashlib.sha256(key.encode()).hexdigest()
@@ -162,32 +169,51 @@ def manage_key():
                 cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
                 if cursor.fetchone()[0] > 0:
                     conn.close()
-                    return jsonify({'error': 'Duplicate key hash detected.'}), 409
+                    if is_api_request:
+                        return jsonify({'error': 'Duplicate key hash detected.'}), 409
+                    message = "Duplicate key hash detected."
+                    return render_template_string(HTML_TEMPLATE, message=message)
 
                 encrypted_key = cipher.encrypt(key.encode())
                 conn.execute('INSERT INTO keys (encrypted_key, key_hash) VALUES (?, ?)', (encrypted_key, key_hash))
                 conn.commit()
                 conn.close()
-                return jsonify({'message': 'Key added successfully.'}), 201
+                if is_api_request:
+                    return jsonify({'message': 'Key added successfully.'}), 201
+                message = "Key encrypted and added successfully."
+                return render_template_string(HTML_TEMPLATE, message=message)
 
             elif action == 'remove':
                 cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
                 if cursor.fetchone()[0] == 0:
                     conn.close()
-                    return jsonify({'error': 'Key hash not found in database.'}), 404
+                    if is_api_request:
+                        return jsonify({'error': 'Key hash not found in database.'}), 404
+                    message = "Key hash not found in database."
+                    return render_template_string(HTML_TEMPLATE, message=message)
 
                 conn.execute("DELETE FROM keys WHERE key_hash = ?", (key_hash,))
                 conn.commit()
                 conn.close()
-                return jsonify({'message': 'Key removed successfully.'}), 200
+                if is_api_request:
+                    return jsonify({'message': 'Key removed successfully.'}), 200
+                message = "Key removed successfully."
+                return render_template_string(HTML_TEMPLATE, message=message)
 
             else:
-                return jsonify({'error': 'Invalid action.'}), 400
+                if is_api_request:
+                    return jsonify({'error': 'Invalid action.'}), 400
+                message = "Invalid action."
+                return render_template_string(HTML_TEMPLATE, message=message)
 
         except Exception as e:
             print(f"Error managing key: {e}")
-            return jsonify({'error': str(e)}), 500
+            if is_api_request:
+                return jsonify({'error': str(e)}), 500
+            message = f"An error occurred: {e}"
+            return render_template_string(HTML_TEMPLATE, message=message)
 
+    # Render HTML for GET requests
     return render_template_string(HTML_TEMPLATE, message=message)
 
 

@@ -27,14 +27,18 @@ DB_FILE = '/usr/src/app/db/keys.db'
 
 # Function to initialize the database if it doesn't exist
 def initialize_db():
-    print(f"Initializing database at: {DB_FILE}", flush=True)
+    print(f"Initializing database at: {DB_FILE}")
+    app.logger.info(f"Initializing database at: {DB_FILE}")
     if os.path.exists(DB_FILE) and not os.path.isfile(DB_FILE):
-        print(f"Error: {DB_FILE} exists but is not a file and cannot be removed automatically.", flush=True)
-        print("Please remove it manually and restart the application.", flush=True)
+        print(f"Error: {DB_FILE} exists but is not a file and cannot be removed automatically.")
+        app.logger.info(f"Error: {DB_FILE} exists but is not a file and cannot be removed automatically.")
+        print("Please remove it manually and restart the application.")
+        app.logger.info("Please remove it manually and restart the application.")
         return
 
     if not os.path.exists(DB_FILE):
-        print(f"Database file does not exist. Creating a new one at: {DB_FILE}", flush=True)
+        print(f"Database file does not exist. Creating a new one at: {DB_FILE}")
+        app.logger.info(f"Database file does not exist. Creating a new one at: {DB_FILE}")
     try:
         conn = sqlite3.connect(DB_FILE)
         conn.execute('''
@@ -46,9 +50,11 @@ def initialize_db():
         ''')
         conn.commit()
         conn.close()
-        print("Database initialized successfully.", flush=True)
+        print("Database initialized successfully.")
+        app.logger.info("Database initialized successfully.")
     except Exception as e:
-        print(f"Error initializing database: {e}", flush=True)
+        print(f"Error initializing database: {e}")
+        app.logger.info(f"Error initializing database: {e}")
 
 # HTML template for the landing page
 HTML_TEMPLATE = """
@@ -216,7 +222,8 @@ def manage_key():
                 return render_template_string(HTML_TEMPLATE, message=message)
 
         except Exception as e:
-            print(f"Error managing key: {e}", flush=True)
+            print(f"Error managing key: {e}")
+            app.logger.info(f"Error managing key: {e}")
             if is_api_request:
                 return jsonify({'error': str(e)}), 500
             message = f"An error occurred: {e}"

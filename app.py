@@ -72,7 +72,7 @@ HTML_TEMPLATE = """
         }
         input {
             padding: 10px;
-            margin: 10px 0;
+            margin: 10px 10px 20px 0;
             width: 300px;
             border-radius: 5px;
             border: 1px solid #444;
@@ -86,70 +86,37 @@ HTML_TEMPLATE = """
             background-color: #5c6bc0;
             color: white;
             cursor: pointer;
+            margin: 0 10px;
         }
         button:hover {
             background-color: #3f4c8c;
-        }
-        form {
-            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Key Management</h1>
-        <form action="/add_key" method="post">
-            <input type="text" name="key" placeholder="Enter your key to add" required>
-            <button type="submit">Add Key</button>
-        </form>
-        <form action="/remove_key" method="post">
-            <input type="text" name="key" placeholder="Enter your key to remove" required>
-            <button type="submit">Remove Key</button>
+        <form action="/" method="post">
+            <input type="text" name="key" placeholder="Enter your key" required>
+            <button type="submit" name="action" value="add">Add Key</button>
+            <button type="submit" name="action" value="remove">Remove Key</button>
         </form>
     </div>
 </body>
 </html>
 """
 
-# New route to handle key removal
-@app.route('/remove_key', methods=['POST'])
-def remove_key():
-    key = request.form.get('key')
-    if not key:
-        return jsonify({'error': 'Key is required'}), 400
 
-    # Validate the key using a regular expression
-    if not re.fullmatch(r'^[a-fA-F0-9]{64}$', key):
-        return jsonify({'error': 'Invalid key format. Only 64-character alphanumeric keys are allowed.'}), 400
-
-    try:
-        key_hash = hashlib.sha256(key.encode()).hexdigest()
-        conn = sqlite3.connect(DB_FILE)
-        
-        # Check if the key exists
-        cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
-        if cursor.fetchone()[0] == 0:
-            conn.close()
-            return jsonify({'error': 'Key not found'}), 404
-
-        # Remove the key from the database
-        conn.execute("DELETE FROM keys WHERE key_hash = ?", (key_hash,))
-        conn.commit()
-        conn.close()
-        return jsonify({'message': 'Key removed successfully'}), 200
-    except Exception as e:
-        print(f"Error removing key: {e}")
-        return jsonify({'error': str(e)}), 500
 
 # Landing page route
-@app.route('/')
-def index():
-    return render_template_string(HTML_TEMPLATE)
+@app.route('/', methods=['GET', 'POST'])
+def manage_key():
+    if request.method == 'GET':
+        return render_template_string(HTML_TEMPLATE)
 
-# Add key route
-@app.route('/add_key', methods=['POST'])
-def add_key():
     key = request.form.get('key')
+    action = request.form.get('action')
+
     if not key:
         return jsonify({'error': 'Key is required'}), 400
 
@@ -159,22 +126,41 @@ def add_key():
 
     try:
         key_hash = hashlib.sha256(key.encode()).hexdigest()
-        encrypted_key = cipher.encrypt(key.encode())
         conn = sqlite3.connect(DB_FILE)
-        
-        # Check for duplicate hash
-        cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
-        if cursor.fetchone()[0] > 0:
-            conn.close()
-            return jsonify({'error': 'Duplicate key detected'}), 409
 
-        conn.execute('INSERT INTO keys (encrypted_key, key_hash) VALUES (?, ?)', (encrypted_key, key_hash))
-        conn.commit()
-        conn.close()
-        return jsonify({'message': 'Key added successfully'}), 201
+        if action == 'add':
+            # Check for duplicate hash
+            cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
+            if cursor.fetchone()[0] > 0:
+                conn.close()
+                return jsonify({'error': 'Duplicate key detected'}), 409
+
+            encrypted_key = cipher.encrypt(key.encode())
+            conn.execute('INSERT INTO keys (encrypted_key, key_hash) VALUES (?, ?)', (encrypted_key, key_hash))
+            conn.commit()
+            conn.close()
+            return jsonify({'message': 'Key added successfully'}), 201
+
+        elif action == 'remove':
+            # Check if the key exists
+            cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
+            if cursor.fetchone()[0] == 0:
+                conn.close()
+                return jsonify({'error': 'Key not found'}), 404
+
+            conn.execute("DELETE FROM keys WHERE key_hash = ?", (key_hash,))
+            conn.commit()
+            conn.close()
+            return jsonify({'message': 'Key removed successfully'}), 200
+
+        else:
+            return jsonify({'error': 'Invalid action'}), 400
+
     except Exception as e:
-        print(f"Error adding key: {e}")
+        print(f"Error managing key: {e}")
         return jsonify({'error': str(e)}), 500
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

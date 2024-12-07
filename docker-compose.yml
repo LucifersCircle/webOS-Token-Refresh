@@ -1,10 +1,40 @@
-version: '3.8'
-
 services:
-  token-refresh:
-    image: luciferscircle/webos-token-refresh
-    container_name: WebOS-TR
+  web_app:
+    image: luciferscircle/webos-token-refresh:latest
+    container_name: web_app
+    networks:
+      - network_tunnel
+      - webOS
     environment:
-      - SESSION_TOKEN=Your_Token_Here
-      - SCRIPT_INTERVAL=86400
+      - ENCRYPTION_KEY= # Generate your own key
+      - APP_SCRIPT=app:app  # Specify the script to run, change to =app.py for test server w/logs
+    volumes:
+      - type: bind
+        source: /path/to/db/dir # Add the directory you want to store keys.db inside
+        target: /usr/src/app/db
+    ports:
+      - "5000:5000"
     restart: always
+
+  task_runner:
+    image: luciferscircle/webos-token-refresh:latest
+    container_name: task_runner
+    networks:
+      - webOS
+    environment:
+      - ENCRYPTION_KEY= # Repeat web_app key
+      - SCRIPT_INTERVAL=86400  # How often tokens will get refreshed. Default 24 hours
+      - APP_SCRIPT=task_runner.py # Start task runner, this can be on a seperate server. Dont change this one
+    volumes:
+      - type: bind
+        source: /path/to/db/dir # Repeat web_app source path
+        target: /usr/src/app/db
+    restart: always
+    depends_on:
+      - web_app
+
+networks:
+  network_tunnel:
+    external: true
+  webOS:
+    external: true

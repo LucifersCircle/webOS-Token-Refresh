@@ -23,27 +23,24 @@ def remove_duplicates():
     """Remove duplicate keys from the database."""
     try:
         conn = sqlite3.connect(db_file)
-        cursor = conn.execute("SELECT encrypted_key FROM keys")
-        rows = cursor.fetchall()
-        
-        # Identify duplicates
-        unique_keys = set()
-        duplicates = []
-        for row in rows:
-            if row[0] in unique_keys:
-                duplicates.append(row[0])
-            else:
-                unique_keys.add(row[0])
-        
-        # Remove duplicates
-        for dup in duplicates:
-            conn.execute("DELETE FROM keys WHERE encrypted_key = ?", (dup,))
-        
+        # Find duplicate keys
+        duplicates_query = """
+        DELETE FROM keys
+        WHERE rowid NOT IN (
+            SELECT MIN(rowid)
+            FROM keys
+            GROUP BY encrypted_key
+        )
+        """
+        cursor = conn.cursor()
+        cursor.execute(duplicates_query)
+        removed_count = cursor.rowcount  # Get the number of rows affected
         conn.commit()
         conn.close()
-        print(f"Removed {len(duplicates)} duplicate keys from the database.", flush=True)
+        print(f"Removed {removed_count} duplicate keys from the database.", flush=True)
     except Exception as e:
         print(f"Error removing duplicates: {e}", flush=True)
+
 
 def fetch_keys():
     """Fetch and decrypt all keys from the database."""

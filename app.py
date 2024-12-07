@@ -142,17 +142,22 @@ HTML_TEMPLATE = """
 @app.route('/', methods=['GET', 'POST'])
 def manage_key():
     message = None  # Default message
+
     if request.method == 'POST':
         key = request.form.get('key')
         action = request.form.get('action')
 
         if not key:
             message = "Key is required."
+            if request.headers.get('Content-Type') == 'application/json':
+                return jsonify({'error': message}), 400
             return render_template_string(HTML_TEMPLATE, message=message)
 
         # Validate the key using a regular expression
         if not re.fullmatch(r'^[a-fA-F0-9]{64}$', key):
             message = "Invalid key format. Only 64-character alphanumeric keys are allowed."
+            if request.headers.get('Content-Type') == 'application/json':
+                return jsonify({'error': message}), 400
             return render_template_string(HTML_TEMPLATE, message=message)
 
         try:
@@ -165,6 +170,8 @@ def manage_key():
                 if cursor.fetchone()[0] > 0:
                     conn.close()
                     message = "Duplicate key hash detected. Refusing encryption and storage."
+                    if request.headers.get('Content-Type') == 'application/json':
+                        return jsonify({'error': message}), 409
                     return render_template_string(HTML_TEMPLATE, message=message)
 
                 encrypted_key = cipher.encrypt(key.encode())
@@ -172,6 +179,8 @@ def manage_key():
                 conn.commit()
                 conn.close()
                 message = "Key encrypted and added successfully."
+                if request.headers.get('Content-Type') == 'application/json':
+                    return jsonify({'message': message}), 201
                 return render_template_string(HTML_TEMPLATE, message=message)
 
             elif action == 'remove':
@@ -180,21 +189,29 @@ def manage_key():
                 if cursor.fetchone()[0] == 0:
                     conn.close()
                     message = "Key hash not found in database."
+                    if request.headers.get('Content-Type') == 'application/json':
+                        return jsonify({'error': message}), 404
                     return render_template_string(HTML_TEMPLATE, message=message)
 
                 conn.execute("DELETE FROM keys WHERE key_hash = ?", (key_hash,))
                 conn.commit()
                 conn.close()
                 message = "Key removed successfully."
+                if request.headers.get('Content-Type') == 'application/json':
+                    return jsonify({'message': message}), 200
                 return render_template_string(HTML_TEMPLATE, message=message)
 
             else:
                 message = "Invalid action."
+                if request.headers.get('Content-Type') == 'application/json':
+                    return jsonify({'error': message}), 400
                 return render_template_string(HTML_TEMPLATE, message=message)
 
         except Exception as e:
             print(f"Error managing key: {e}")
             message = f"An error occurred: {e}"
+            if request.headers.get('Content-Type') == 'application/json':
+                return jsonify({'error': message}), 500
             return render_template_string(HTML_TEMPLATE, message=message)
 
     return render_template_string(HTML_TEMPLATE, message=message)

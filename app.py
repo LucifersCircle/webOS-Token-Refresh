@@ -1,6 +1,7 @@
 import os
 import re
 import sqlite3
+import hashlib
 from flask import Flask, request, jsonify, render_template_string
 from cryptography.fernet import Fernet
 
@@ -22,7 +23,7 @@ def initialize_db():
     if os.path.exists(DB_FILE) and not os.path.isfile(DB_FILE):
         print(f"Error: {DB_FILE} exists but is not a file and cannot be removed automatically.")
         print("Please remove it manually and restart the application.")
-        return  # Exit initialization to prevent further errors
+        return
 
     if not os.path.exists(DB_FILE):
         print(f"Database file does not exist. Creating a new one at: {DB_FILE}")
@@ -31,7 +32,8 @@ def initialize_db():
         conn.execute('''
         CREATE TABLE IF NOT EXISTS keys (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            encrypted_key BLOB NOT NULL
+            encrypted_key BLOB NOT NULL,
+            key_hash TEXT NOT NULL
         )
         ''')
         conn.commit()
@@ -118,15 +120,19 @@ def add_key():
         return jsonify({'error': 'Invalid key format. Only 64-character alphanumeric keys are allowed.'}), 400
 
     try:
-        print(f"Received key: {key}")
+        key_hash = hashlib.sha256(key.encode()).hexdigest()
         encrypted_key = cipher.encrypt(key.encode())
-        print(f"Encrypted key: {encrypted_key}")
         conn = sqlite3.connect(DB_FILE)
-        print("Database connection established.")
-        conn.execute('INSERT INTO keys (encrypted_key) VALUES (?)', (encrypted_key,))
+        
+        # Check for duplicate hash
+        cursor = conn.execute("SELECT COUNT(*) FROM keys WHERE key_hash = ?", (key_hash,))
+        if cursor.fetchone()[0] > 0:
+            conn.close()
+            return jsonify({'error': 'Duplicate key detected'}), 409
+
+        conn.execute('INSERT INTO keys (encrypted_key, key_hash) VALUES (?, ?)', (encrypted_key, key_hash))
         conn.commit()
         conn.close()
-        print("Key inserted successfully.")
         return jsonify({'message': 'Key added successfully'}), 201
     except Exception as e:
         print(f"Error adding key: {e}")

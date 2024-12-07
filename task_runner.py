@@ -25,29 +25,20 @@ def remove_duplicates():
         conn = sqlite3.connect(db_file)
         cursor = conn.cursor()
 
-        # Fetch all keys and normalize them
-        cursor.execute("SELECT rowid, encrypted_key FROM keys")
-        rows = cursor.fetchall()
+        # Remove duplicates based on key_hash
+        cursor.execute("""
+        DELETE FROM keys
+        WHERE rowid NOT IN (
+            SELECT MIN(rowid)
+            FROM keys
+            GROUP BY key_hash
+        )
+        """)
 
-        # Use a set to track normalized keys and find duplicates
-        unique_keys = set()
-        duplicates = []
-        for rowid, encrypted_key in rows:
-            # Normalize key by stripping whitespace and converting to lowercase
-            normalized_key = encrypted_key.strip().lower()  # Adjust normalization as needed
-            if normalized_key in unique_keys:
-                duplicates.append(rowid)  # Track duplicate row IDs
-            else:
-                unique_keys.add(normalized_key)
-
-        # Remove duplicates by rowid
-        for rowid in duplicates:
-            cursor.execute("DELETE FROM keys WHERE rowid = ?", (rowid,))
-
+        removed_count = conn.total_changes  # Number of rows deleted
         conn.commit()
         conn.close()
-
-        print(f"Removed {len(duplicates)} duplicate keys from the database.", flush=True)
+        print(f"Removed {removed_count} duplicate keys from the database.", flush=True)
     except Exception as e:
         print(f"Error removing duplicates: {e}", flush=True)
 

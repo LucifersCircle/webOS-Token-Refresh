@@ -2,11 +2,18 @@ import os
 import re
 import sqlite3
 import hashlib
+import logging
 
 from flask import Flask, request, jsonify, render_template_string
 from cryptography.fernet import Fernet
 
 app = Flask(__name__)
+
+# Set up logging for Gunicorn
+if __name__ != '__main__':
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
 
 # Get encryption key from environment variable
 encryption_key = os.getenv('ENCRYPTION_KEY')
@@ -42,9 +49,6 @@ def initialize_db():
         print("Database initialized successfully.", flush=True)
     except Exception as e:
         print(f"Error initializing database: {e}", flush=True)
-
-# Initialize database on startup
-initialize_db()
 
 # HTML template for the landing page
 HTML_TEMPLATE = """
@@ -143,8 +147,6 @@ HTML_TEMPLATE = """
 
 """
 
-
-
 # Landing page route
 @app.route('/', methods=['GET', 'POST'])
 def manage_key():
@@ -226,4 +228,5 @@ def manage_key():
 
 
 if __name__ == '__main__':
+    initialize_db() # Initialize database on startup
     app.run(host='0.0.0.0', port=5000)

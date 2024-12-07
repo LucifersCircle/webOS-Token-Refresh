@@ -12,5 +12,6 @@ RUN pip install --no-cache-dir flask requests cryptography
 
 USER appuser
 
-# Default command (can be overridden in docker-compose.yml)
-CMD ["python", "app.py"]
+# Use an environment variable to decide which script to run
+ENV APP_SCRIPT="app.py"
+CMD ["sh", "-c", "python $APP_SCRIPT"]

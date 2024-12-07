@@ -101,6 +101,9 @@ HTML_TEMPLATE = """
         .message.duplicate {
             color: yellow;
         }
+        .message.invalid {
+            color: red;
+        }
         .footer {
             position: absolute;
             bottom: 10px;
@@ -125,8 +128,12 @@ HTML_TEMPLATE = """
             <button type="submit" name="action" value="remove">Remove Key</button>
         </form>
         {% if message %}
-        <div class="message {% if 'Duplicate' in message %}duplicate{% endif %}">{{ message }}</div>
+        <div class="message 
+            {% if 'Duplicate' in message %}duplicate{% endif %}
+            {% if 'Invalid key format' in message %}invalid{% endif %}
+        ">{{ message }}</div>
         {% endif %}
+
     </div>
     <div class="footer">
         <p>Check out the source code on <a href="https://github.com/LucifersCircle/webOS-Token-Refresh" target="_blank">GitHub</a>.</p>

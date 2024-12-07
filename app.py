@@ -1,4 +1,5 @@
 import os
+import re
 import sqlite3
 from flask import Flask, request, jsonify, render_template_string
 from cryptography.fernet import Fernet
@@ -111,6 +112,11 @@ def add_key():
     key = request.form.get('key')
     if not key:
         return jsonify({'error': 'Key is required'}), 400
+
+    # Validate the key using a regular expression
+    if not re.fullmatch(r'^[a-fA-F0-9]{64}$', key):
+        return jsonify({'error': 'Invalid key format. Only 64-character alphanumeric keys are allowed.'}), 400
+
     try:
         print(f"Received key: {key}")
         encrypted_key = cipher.encrypt(key.encode())

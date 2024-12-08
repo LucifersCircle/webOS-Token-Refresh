@@ -1,136 +1,110 @@
-# WebOS Token Refresh Script
 
-## Overview
+# WebOS Token Refresher
 
-This repository contains a Python script designed to periodically refresh a WebOS token by making HTTP requests to the LG Dev mode refresh URL (*https://developer.lge.com/secure/ResetDevModeSession.dev?sessionToken=*). The script is containerized using Docker and can be easily managed using Docker Compose.
+A secure web-based tool for refreshing LG WebOS developer mode session tokens. This project ensures your tokens are stored securely and refreshes them periodically with the LG Developer API.
+
+---
 
 ## Features
 
-- **Token Refresh**: The script sends an HTTP GET request to refresh the token.
-- **Logging**: Logs include timestamps, request status, and a censored version of the URL to protect your token while viewing.
-- **Environment Configuration**: Uses environment variables for configuration, making it easy to manage tokens and intervals.
+- **Web Interface**
+- **API for CLI calls**
+- **Automated Refresh**:
+  - Periodically refreshes stored tokens with the LG Developer API.
+- **Security**:
+  - Tokens are hashed using SHA-256 to ensure uniqueness without storing plaintext. This is used to reject duplicate entries, and to allow deletion of your token.
+  - Encrypted tokens are stored securely using an environment-provided encryption key.
+  - No Ads
+  - Open Source
 
-## Docker Compose Configuration
+---
 
-The project includes a Docker Compose configuration for easy deployment. Below is the `docker-compose.yml` file:
+## Instances
 
-```yaml
-version: '3.8'
+Anyone can run an instance for this, although I'm not sure why anybody would really want to. However, if you decide to and want to share it then make a PR and add it here.
 
-services:
-  token-refresh:
-    image: luciferscircle/webos-token-refresh
-    container_name: WebOS-TR
-    environment:
-      - SESSION_TOKEN=Your_Token_Here
-      - SCRIPT_INTERVAL=86400
-    restart: always
+- **[https://lg.pirate.vodka](https://lg.pirate.vodka)**
+
+---
+
+## Usage
+
+### Add a Token
+1. Web UI ([lg.pirate.vodka](https://lg.pirate.vodka))
+2. API via `curl`
+ 
+**Command:**
+```bash
+curl -X POST -d "key=YOUR_TOKEN&action=add" https://lg.pirate.vodka
 ```
 
-### Configuration Details
+### Remove a Token
+1. Web UI ([lg.pirate.vodka](https://lg.pirate.vodka))
+2. API via `curl`
 
-- **`image:`** Specifies the Docker image to use from Docker Hub.
-- **`container_name:`** Names the container `WebOS-TR`.
-- **`environment:`**
-  - `SESSION_TOKEN:` The token used for authentication. Replace `Your_Token_Here` with your actual token.
-  - `SCRIPT_INTERVAL:` Interval (in seconds) at which the script should run. Default is 86400 seconds (24 hours).
-- **`restart: always:`** Ensures the container restarts automatically if it stops.
-
-## Python Script
-
-The Python script `main.py` handles the token refresh logic. Below is the script:
-
-```python
-import os
-import time
-import logging
-import requests
-
-# Configure logging.
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-base_url = "https://developer.lge.com/secure/ResetDevModeSession.dev?sessionToken="
-token = os.getenv('SESSION_TOKEN')
-if not token:
-    logging.error("SESSION_TOKEN is not set. Please set it in the environment variables.")
-    exit(1)
-
-interval = int(os.getenv('SCRIPT_INTERVAL', 86400))  # Default to 24 hours if not set.
-
-def mask_token(url, token):
-    """Masks the token in the URL, showing only the last 4 characters."""
-    masked_token = "***" + token[-4:]
-    return url.replace(token, masked_token)
-
-def run_task():
-    url = f"{base_url}{token}"
-    try:
-        response = requests.get(url)
-        censored_url = mask_token(url, token)
-        logging.info(f"Fired request to: {censored_url}")
-        logging.info(f"Response Status Code: {response.status_code}")
-    except requests.RequestException as e:
-        logging.error(f"Request failed: {e}")
-
-if __name__ == "__main__":
-    while True:
-        run_task()
-        time.sleep(interval)
+**Command:**
+```bash
+curl -X POST -d "key=YOUR_TOKEN&action=remove" https://lg.pirate.vodka
 ```
 
-### Script Details
+---
 
-- **Logging Configuration**: Logs are set to `INFO` level with timestamps, and log messages include the request status and a censored URL.
-- **Token Censorship**: The token in the URL is replaced with `<TOKEN_CENSORED>` for privacy.
-- **Interval**: The script waits for a period defined by `SCRIPT_INTERVAL` before making the next request. Default is 24 hours (86400 seconds).
+## Requirements
 
-## How to Use
+- **Docker**
+- **Docker Compose**
+- An active LG WebOS developer account.
 
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/LucifersCircle/webOS-Token-Refresh.git
-   cd repository
-   ```
+---
 
-2. **Edit `docker-compose.yml`**: Replace `Your_Token_Here` with your actual session token.
+## Deployment
 
-3. **Start the Service**:
-   ```bash
-   docker-compose up -d
-   ```
+### 0. Provided Docker compose file
 
-4. **Check Logs**:
-   ```bash
-   docker logs WebOS-TR
-   ```
+### 1. Clone the repository:
+```bash
+git clone https://github.com/LucifersCircle/webOS-Token-Refresh.git
+cd webOS-Token-Refresh
+```
 
-5. **Stop the Service**:
-   ```bash
-   docker-compose down
-   ```
-## CLI Instructions
+### 2. Configure environment variables in `.env`:
+- `ENCRYPTION_KEY`: A secure encryption key for token storage.
+- `SCRIPT_INTERVAL`: (Optional) Interval for the task runner to refresh tokens, in seconds (default: 86400).
+- `source: /path/to/db/dir`: Add the directory you want to store keys.db inside. `Ex. /home/username/db`
 
-Alternatively, you can run the Docker container from the DockerHub Image using the CLI. Follow these steps:
+### 3. Build and start the application:
+```bash
+docker-compose up --build
+```
 
-1. **Pull the Docker Image**:
+### 4. Access the web interface:
 
-   ```bash
-   docker pull luciferscircle/webos-token-refresh
-   ```
+Navigate to `http://localhost:5000` in your browser.
 
-2. **Run the Docker Container** with environment variables:
+---
 
-   ```bash
-   docker run -d --name WebOS-TR -e SESSION_TOKEN=Your_Token_Here -e SCRIPT_INTERVAL=86400 luciferscircle/webos-token-refresh
-   ```
+## Development Notes
 
-### CLI Options
+### Tech Stack:
+- Python (Flask)
+- SQLite
+- Gunicorn (production server)
+- Docker
 
-- `-d`: Run the container in detached mode.
-- `--name WebOS-TR`: Assign a name to the container.
-- `-e SESSION_TOKEN=Your_Token_Here`: Set the session token environment variable.
-- `-e SCRIPT_INTERVAL=86400`: Set the interval environment variable.
+### Logs:
 
-## Questions
+- Application and task runner logs are accessible via Docker.
 
-If you have any questions or need further assistance, feel free to open an issue.  I made this because a certain website stopped letting me make 1 request per day for free to renew my dev mode session, and I wanted to make it easy on myself to "set and forget" it for real this time.
+---
+
+## Contributing
+
+Contributions are welcome! Please fork the repository and submit a pull request.
+
+---
+
+## License
+
+This project is licensed under the GPL-3.0 License. See `LICENSE` for details.
+
+---

@@ -139,14 +139,14 @@ HTML_TEMPLATE = """
     <div class="container">
         <h1>WebOS Token Refresher</h1>
         <form action="/" method="post">
-            <input type="text" name="key" placeholder="Enter your key" required>
-            <button type="submit" name="action" value="add">Add Key</button>
-            <button type="submit" name="action" value="remove" class="remove">Remove Key</button>
+            <input type="text" name="key" placeholder="Enter your token" required>
+            <button type="submit" name="action" value="add">Add Token</button>
+            <button type="submit" name="action" value="remove" class="remove">Remove Token</button>
         </form>
         {% if message %}
         <div class="message 
-            {% if 'Duplicate' in message %}duplicate{% endif %}
-            {% if 'Invalid key format' in message %}invalid{% endif %}
+            {% if 'duplicate' in message %}duplicate{% endif %}
+            {% if 'invalid token format' in message %}invalid{% endif %}
             {% if 'not found in database' in message %}not-found{% endif %}
         ">{{ message }}</div>
         {% endif %}
@@ -174,15 +174,15 @@ def manage_key():
 
         if not key:
             if is_api_request:
-                return jsonify({'error': 'Key is required'}), 400
-            message = "Key is required."
+                return jsonify({'error': 'token is required'}), 400
+            message = "token is required"
             return render_template_string(HTML_TEMPLATE, message=message)
 
         # Validate the key format
         if not re.fullmatch(r'^[a-fA-F0-9]{64}$', key):
             if is_api_request:
-                return jsonify({'error': 'Invalid key format. Only 64-character alphanumeric keys are allowed.'}), 400
-            message = "Invalid key format. Only 64-character alphanumeric keys are allowed."
+                return jsonify({'error': 'invalid token format - accepts 64-character alphanumeric tokens'}), 400
+            message = "invalid token format - accepts 64-character alphanumeric tokens"
             return render_template_string(HTML_TEMPLATE, message=message)
 
         try:
@@ -194,8 +194,8 @@ def manage_key():
                 if cursor.fetchone()[0] > 0:
                     conn.close()
                     if is_api_request:
-                        return jsonify({'error': 'Duplicate key hash detected.'}), 409
-                    message = "Duplicate key hash detected."
+                        return jsonify({'error': 'duplicate token hash detected - rejecting'}), 409
+                    message = "duplicate token hash detected - rejecting"
                     return render_template_string(HTML_TEMPLATE, message=message)
 
                 encrypted_key = cipher.encrypt(key.encode())
@@ -203,8 +203,8 @@ def manage_key():
                 conn.commit()
                 conn.close()
                 if is_api_request:
-                    return jsonify({'message': 'Key added successfully.'}), 201
-                message = "Key encrypted and added successfully."
+                    return jsonify({'message': 'token added successfully'}), 201
+                message = "token added successfully"
                 return render_template_string(HTML_TEMPLATE, message=message)
 
             elif action == 'remove':
@@ -212,29 +212,29 @@ def manage_key():
                 if cursor.fetchone()[0] == 0:
                     conn.close()
                     if is_api_request:
-                        return jsonify({'error': 'Key hash not found in database.'}), 404
-                    message = "Key hash not found in database."
+                        return jsonify({'error': 'token hash not found in database'}), 404
+                    message = "token hash not found in database"
                     return render_template_string(HTML_TEMPLATE, message=message)
 
                 conn.execute("DELETE FROM keys WHERE key_hash = ?", (key_hash,))
                 conn.commit()
                 conn.close()
                 if is_api_request:
-                    return jsonify({'message': 'Key removed successfully.'}), 200
-                message = "Key removed successfully."
+                    return jsonify({'message': 'token removed successfully'}), 200
+                message = "token removed successfully"
                 return render_template_string(HTML_TEMPLATE, message=message)
 
             else:
                 if is_api_request:
-                    return jsonify({'error': 'Invalid action.'}), 400
-                message = "Invalid action."
+                    return jsonify({'error': 'invalid action'}), 400
+                message = "invalid action"
                 return render_template_string(HTML_TEMPLATE, message=message)
 
         except Exception as e:
             print(f"Error managing key: {e}", flush=True)
             if is_api_request:
                 return jsonify({'error': str(e)}), 500
-            message = f"An error occurred: {e}"
+            message = f"an error occurred: {e}"
             return render_template_string(HTML_TEMPLATE, message=message)
 
     # Render HTML for GET requests

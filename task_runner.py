@@ -16,12 +16,8 @@ if not encryption_key:
     raise RuntimeError("ENCRYPTION_KEY environment variable is not set.")
 cipher = Fernet(encryption_key.encode())
 
-def mask_token(token):
-    """Masks the token, showing only the last 4 characters."""
-    return f"***{token[-4:]}"
-
+# Fetch and decrypt all keys from the database
 def fetch_keys():
-    """Fetch and decrypt all keys from the database."""
     try:
         conn = sqlite3.connect(db_file)
         cursor = conn.execute("SELECT encrypted_key FROM keys")
@@ -34,8 +30,12 @@ def fetch_keys():
         print(f"Error fetching keys: {e}", flush=True)
         return []
 
+# Masks the token for logs, showing only the last 4 characters
+def mask_token(token):
+    return f"***{token[-4:]}"
+
+# Send the request to the API using the token
 def send_request(token):
-    """Send the request to the API using the token."""
     url = f"{base_url}{token}"
     try:
         response = requests.get(url)
@@ -43,6 +43,8 @@ def send_request(token):
         print(f"Request to {masked_token} returned status code {response.status_code}.", flush=True)
     except requests.RequestException as e:
         print(f"Failed to send request for token {mask_token(token)}: {e}", flush=True)
+
+
 
 if __name__ == "__main__":
     print("Starting task_runner...", flush=True)

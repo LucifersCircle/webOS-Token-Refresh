@@ -77,6 +77,8 @@ HTML_TEMPLATE = """
             border: 1px solid #444;
             background-color: #333;
             color: white;
+            text-align: center;
+            line-height: 1.5;
         }
         button {
             padding: 10px 20px;

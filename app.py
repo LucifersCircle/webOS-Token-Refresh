@@ -66,6 +66,8 @@ HTML_TEMPLATE = """
         }
         .container {
             text-align: center;
+            width: 400px;
+            margin: 0 auto; /* Center the container */
         }
         input {
             padding: 10px;
@@ -89,17 +91,25 @@ HTML_TEMPLATE = """
             background-color: #3f4c8c;
         }
         .message {
-            margin-top: 10px;
+            margin: 10px auto;
             padding: 10px;
             background-color: #2e2e2e;
             border-radius: 5px;
             color: lightgreen;
+            width: 100%; /* Match container width */
+            text-align: center;
         }
         .message.duplicate {
             color: yellow;
         }
         .message.invalid {
             color: red;
+        }
+        .description {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #ccc;
+            text-align: center;
         }
         .footer {
             position: absolute;
@@ -140,6 +150,7 @@ HTML_TEMPLATE = """
     </div>
 </body>
 </html>
+
 
 """
 

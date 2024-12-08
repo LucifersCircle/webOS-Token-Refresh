@@ -35,7 +35,7 @@ Anyone can run an instance for this, although I'm not sure why anybody would rea
  
 **Command:**
 ```bash
-curl -X POST -d "key=YOUR_TOKEN&action=add" https://lg.pirate.vodka
+curl -X POST -d "key=YOUR_TOKEN_HERE&action=add" -H "Accept: application/json" https://lg.pirate.vodka
 ```
 
 ### Remove a Token
@@ -44,7 +44,7 @@ curl -X POST -d "key=YOUR_TOKEN&action=add" https://lg.pirate.vodka
 
 **Command:**
 ```bash
-curl -X POST -d "key=YOUR_TOKEN&action=remove" https://lg.pirate.vodka
+curl -X POST -d "key=YOUR_TOKEN_HERE&action=remove" -H "Accept: application/json" https://lg.pirate.vodka
 ```
 
 ---

@@ -50,7 +50,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WTR</title>
+    <title>WebOS-TR</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -90,6 +90,12 @@ HTML_TEMPLATE = """
         button:hover {
             background-color: #3f4c8c;
         }
+        button.remove {
+            background-color: #d9534f; /* Soft red */
+        }
+        button.remove:hover {
+            background-color: #c9302c; /* Slightly darker red */
+        }
         .message {
             margin: 10px auto;
             padding: 10px;
@@ -99,7 +105,8 @@ HTML_TEMPLATE = """
             width: 100%; /* Match container width */
             text-align: center;
         }
-        .message.duplicate {
+        .message.duplicate,
+        .message.not-found {
             color: yellow;
         }
         .message.invalid {
@@ -132,12 +139,13 @@ HTML_TEMPLATE = """
         <form action="/" method="post">
             <input type="text" name="key" placeholder="Enter your key" required>
             <button type="submit" name="action" value="add">Add Key</button>
-            <button type="submit" name="action" value="remove">Remove Key</button>
+            <button type="submit" name="action" value="remove" class="remove">Remove Key</button>
         </form>
         {% if message %}
         <div class="message 
             {% if 'Duplicate' in message %}duplicate{% endif %}
             {% if 'Invalid key format' in message %}invalid{% endif %}
+            {% if 'not found in database' in message %}not-found{% endif %}
         ">{{ message }}</div>
         {% endif %}
 
@@ -150,8 +158,6 @@ HTML_TEMPLATE = """
     </div>
 </body>
 </html>
-
-
 """
 
 # Landing page route

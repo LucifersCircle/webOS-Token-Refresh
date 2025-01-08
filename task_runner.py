@@ -1,8 +1,7 @@
 import os
 import time
 import sqlite3
-from multiprocessing import Pool, cpu_count
-
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import requests
 from cryptography.fernet import Fernet
 
@@ -64,15 +63,32 @@ def send_request(token):
 def mask_token(token):
     return f"***{token[-4:]}"
 
-# Process a batch of keys: decrypt and send requests
+# Decrypt keys in parallel
+def decrypt_keys_in_parallel(encrypted_keys):
+    with ProcessPoolExecutor() as decrypt_executor:
+        decrypted_keys = list(decrypt_executor.map(decrypt_key, encrypted_keys))
+    return [key for key in decrypted_keys if key is not None]
+
+# Send API requests in parallel
+def send_requests_in_parallel(decrypted_keys):
+    with ThreadPoolExecutor() as api_executor:
+        api_executor.map(send_request, decrypted_keys)
+
+# Process a batch of keys: decrypt in parallel and send API requests concurrently
 def process_keys_batch(encrypted_keys):
-    with Pool(processes=cpu_count()) as pool:
-        decrypted_keys = pool.map(decrypt_key, encrypted_keys)
-    # Filter out any None values resulting from decryption errors
-    valid_keys = [key for key in decrypted_keys if key is not None]
-    for key in valid_keys:
-        send_request(key)
-    return len(valid_keys)
+    # Step 1: Parallel decryption
+    start_decrypt_time = time.time()
+    decrypted_keys = decrypt_keys_in_parallel(encrypted_keys)
+    end_decrypt_time = time.time()
+    print(f"Decrypted {len(decrypted_keys)} keys in {end_decrypt_time - start_decrypt_time:.2f} seconds.", flush=True)
+
+    # Step 2: Parallel API calls
+    start_api_time = time.time()
+    send_requests_in_parallel(decrypted_keys)
+    end_api_time = time.time()
+    print(f"Processed API calls for {len(decrypted_keys)} keys in {end_api_time - start_api_time:.2f} seconds.", flush=True)
+
+    return len(decrypted_keys)
 
 if __name__ == "__main__":
     print("Starting task_runner...", flush=True)

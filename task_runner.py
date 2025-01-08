@@ -80,28 +80,45 @@ def process_keys_batch(encrypted_keys):
     start_decrypt_time = time.time()
     decrypted_keys = decrypt_keys_in_parallel(encrypted_keys)
     end_decrypt_time = time.time()
-    print(f"Decrypted {len(decrypted_keys)} keys in {end_decrypt_time - start_decrypt_time:.2f} seconds.", flush=True)
+    decrypt_time = end_decrypt_time - start_decrypt_time
+    print(f"Decrypted {len(decrypted_keys)} keys in {decrypt_time:.2f} seconds.", flush=True)
 
     # Step 2: Parallel API calls
     start_api_time = time.time()
     send_requests_in_parallel(decrypted_keys)
     end_api_time = time.time()
-    print(f"Processed API calls for {len(decrypted_keys)} keys in {end_api_time - start_api_time:.2f} seconds.", flush=True)
+    api_time = end_api_time - start_api_time
+    print(f"Processed API calls for {len(decrypted_keys)} keys in {api_time:.2f} seconds.", flush=True)
 
-    return len(decrypted_keys)
+    return len(decrypted_keys), decrypt_time, api_time
 
 if __name__ == "__main__":
     print("Starting task_runner...", flush=True)
     while True:
         offset = 0
         total_processed = 0
+        total_decrypt_time = 0  # Track total decryption time
+        total_api_time = 0  # Track total API call time
+        batch_count = 0  # Track number of batches processed
+
         while True:
             encrypted_keys = fetch_encrypted_keys(offset, batch_size)
             if not encrypted_keys:
                 break
-            processed_count = process_keys_batch(encrypted_keys)
+            processed_count, decrypt_time, api_time = process_keys_batch(encrypted_keys)
             total_processed += processed_count
+            total_decrypt_time += decrypt_time
+            total_api_time += api_time
+            batch_count += 1
             offset += batch_size
+
+        # Final summary after all batches are processed
+        total_elapsed_time = total_decrypt_time + total_api_time
         print(f"Fetched, decrypted, and processed {total_processed} keys from the database.", flush=True)
+        print(f"Total number of batches processed: {batch_count}", flush=True)
+        print(f"Total elapsed decryption time: {total_decrypt_time:.2f} seconds.", flush=True)
+        print(f"Total elapsed API call time: {total_api_time:.2f} seconds.", flush=True)
+        print(f"Total elapsed time (decryption + API calls): {total_elapsed_time:.2f} seconds.", flush=True)
         print(f"Sleeping for {interval} seconds.", flush=True)
+
         time.sleep(interval)

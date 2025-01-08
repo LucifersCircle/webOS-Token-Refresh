@@ -24,7 +24,6 @@ def fetch_keys():
         # Decrypt each key before returning
         keys = [cipher.decrypt(row[0]).decode() for row in cursor.fetchall()]
         conn.close()
-        print(f"Fetched and decrypted {len(keys)} keys from the database.", flush=True)
         return keys
     except Exception as e:
         print(f"Error fetching keys: {e}", flush=True)
@@ -44,15 +43,16 @@ def send_request(token):
     except requests.RequestException as e:
         print(f"Failed to send request for token {mask_token(token)}: {e}", flush=True)
 
-
-
 if __name__ == "__main__":
     print("Starting task_runner...", flush=True)
     while True:
         keys = fetch_keys()
         if not keys:
             print("No keys found in the database.", flush=True)
-        for key in keys:
-            send_request(key)
+        else:
+            for key in keys:
+                send_request(key)
+            # Log the count of fetched and decrypted keys after processing them
+            print(f"Fetched and decrypted {len(keys)} keys from the database.", flush=True)
         print(f"Sleeping for {interval} seconds.", flush=True)
         time.sleep(interval)

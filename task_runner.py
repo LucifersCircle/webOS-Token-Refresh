@@ -114,13 +114,14 @@ if __name__ == "__main__":
 
         # Final summary after all batches are processed
         total_elapsed_time = total_decrypt_time + total_api_time
+        new_lapse_interval = interval - total_elapsed_time
         print("~~~~~~~~~~~~~~~~", flush=True)
         print(f"Total number of keys processed: {total_processed}", flush=True)
         print(f"Total number of batches processed: {batch_count}", flush=True)
         print(f"Total elapsed decryption time: {total_decrypt_time:.2f} seconds.", flush=True)
         print(f"Total elapsed API call time: {total_api_time:.2f} seconds.", flush=True)
         print(f"Total elapsed time: {total_elapsed_time:.2f} seconds.", flush=True)
-        print(f"Sleeping for {interval} seconds.", flush=True)
+        print(f"Sleeping for {new_lapse_interval} seconds.", flush=True)
         print("~~~~~~~~~~~~~~~~", flush=True)
 
-        time.sleep(interval)
+        time.sleep(new_lapse_interval)

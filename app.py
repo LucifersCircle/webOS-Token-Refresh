@@ -2,6 +2,7 @@ import os
 import re
 import sqlite3
 import hashlib
+from contextlib import closing
 
 from flask import Flask, request, jsonify, render_template_string
 from cryptography.fernet import Fernet
@@ -161,6 +162,29 @@ HTML_TEMPLATE = """
 </body>
 </html>
 """
+
+@app.route('/api/key-status', methods=['POST'])
+def key_status():
+    """Check registration using only the existing SHA-256 token hash."""
+    key_hash = request.form.get('key_hash', '')
+    if not re.fullmatch(r'[a-fA-F0-9]{64}', key_hash):
+        response = jsonify({'error': 'a valid SHA-256 key_hash is required'})
+        response.status_code = 400
+    else:
+        try:
+            # Opening in read-only mode also prevents creating a missing database.
+            with closing(sqlite3.connect(f'file:{DB_FILE}?mode=ro', uri=True)) as conn:
+                registered = conn.execute(
+                    'SELECT 1 FROM keys WHERE key_hash = ? LIMIT 1',
+                    (key_hash.lower(),),
+                ).fetchone() is not None
+            response = jsonify({'registered': registered})
+        except sqlite3.Error:
+            response = jsonify({'error': 'unable to check token registration'})
+            response.status_code = 503
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
 
 # Landing page route
 @app.route('/', methods=['GET', 'POST'])

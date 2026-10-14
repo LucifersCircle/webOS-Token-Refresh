@@ -49,6 +49,26 @@ curl -X POST -d "key=YOUR_TOKEN_HERE&action=remove" -H "Accept: application/json
 
 ---
 
+### Check Token Registration
+
+Compute the SHA-256 digest of the exact trimmed token, preserving its letter case,
+and submit only that digest to the read-only status endpoint:
+
+```bash
+curl -X POST -d "key_hash=SHA256_DIGEST" -H "Accept: application/json" https://lg.pirate.vodka/api/key-status
+```
+
+A valid hash returns HTTP 200 with `{"registered": true}` when it is present in
+the database, or `{"registered": false}` when it is absent. Invalid hashes return
+400; an unavailable database returns 503. Responses use `Cache-Control: no-store`.
+The lookup does not insert, remove, refresh, or decrypt a token.
+
+Run the API regression checks with Flask and cryptography installed:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
 ## Requirements
 
 - **Docker**
